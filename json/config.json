@@ -2,10 +2,18 @@
     "settingfile_path":"./json/setting.json",
     "window_size":"1024x720+0+0",
     "window_title":"TKU_SAM_project",
+    "background1":[
+        "#181818",
+        "#1F1F1F",
+        "#BBB"
+    ],
     "gen_button_text":"gen",
     "set_daemon":true,
     "gen_ans_img_floder":"save_ans",
     "gen_ans_img_name":"_ans.png",
     "gen_compare_img_floder":"save_compare",
-    "gen_compare_img_name":"_compare.png"
+    "gen_compare_img_name":"_compare.png",
+    "gen_is_show_ans_text":"顯示answer圖片",
+    "gen_is_gen_compare_text":"產生compare圖片",
+    "gen_is_show_compare_text":"顯示compare圖片"
 }

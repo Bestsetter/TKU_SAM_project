@@ -100,7 +100,7 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = 
     save_name += config["gen_ans_img_name"]
     output_path = os.path.join(output_folder, save_name)
     plt.savefig(output_path, bbox_inches="tight", pad_inches=0)
-    if is_show_compare:
+    if is_show_ans:
         img = Image.open(output_path)
         img.show()
 
