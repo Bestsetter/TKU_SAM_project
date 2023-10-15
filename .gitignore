@@ -1,1 +1,6 @@
 *.pth
+__pycache__
+save_ans
+save_compare
+GUI.py
+json/setting.json

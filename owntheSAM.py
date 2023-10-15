@@ -2,7 +2,11 @@ import numpy as np
 import pandas as pd 
 import os
 from PIL import Image
+
+import matplotlib 
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 from datasets import load_dataset
 from transformers import SamProcessor
 import torch
@@ -35,76 +39,104 @@ def show_mask(mask, ax, random_color=False):
     mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
     ax.imshow(mask_image)
 
+def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = True):
+    '''
+    
+    '''
+    print("Generating ans")
+    #載入model 架構
+    model = SamModel.from_pretrained("facebook/sam-vit-base")
+    model.load_state_dict(torch.load("best.pth"))
+    processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
 
-#載入model 架構
-model = SamModel.from_pretrained("facebook/sam-vit-base")
-model.load_state_dict(torch.load("best.pth"))
-processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
-
-#設定測試圖片資料夾(隨機選取圖片，normal 不適用)
-folder_A = "D:/TKU_SAM_project/Dataset_BUSI_with_GT/malignant"
-folder_B = "D:/TKU_SAM_project/Dataset_BUSI_with_GT/begnin"
-selected_folder = random.choice([folder_A, folder_B])
-image_files = [f for f in os.listdir(selected_folder) if f.endswith(").png")]
-selected_image = random.choice(image_files)
-image_path = os.path.join(selected_folder, selected_image)
-mask_path = image_path.replace(").png", ")_mask.png")
-# print(image_path)
-# print(mask_path)
-image = Image.open(image_path)
-mask = Image.open(mask_path)
-image = image.resize((256, 256))
-mask = mask.resize((256, 256))
-# print(image.size)
-# print(mask.size)
-
-
-ground_truth_mask = np.array(mask)
-prompt = get_bounding_box(ground_truth_mask)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model = model.to('cuda') 
-# prepare image + box prompt for the model
-inputs = processor(image, input_boxes=[[prompt]], return_tensors="pt").to(device)
-# for k,v in inputs.items():
-#   print(k,v.shape)
-
-model.eval()
-
-# forward pass
-with torch.no_grad():
-  outputs = model(**inputs, multimask_output=False)
-
-# apply sigmoid
-medsam_seg_prob = torch.sigmoid(outputs.pred_masks.squeeze(1))
-# convert soft mask to hard mask
-medsam_seg_prob = medsam_seg_prob.cpu().numpy().squeeze()
-medsam_seg = (medsam_seg_prob > 0.5).astype(np.uint8)
+    #設定測試圖片資料夾(隨機選取圖片，normal 不適用)
+    folder_A = "./Dataset_BUSI_with_GT/malignant"
+    folder_B = "./Dataset_BUSI_with_GT/benign"
+    selected_folder = random.choice([folder_A, folder_B])
+    image_files = [f for f in os.listdir(selected_folder) if f.endswith(").png")]
+    selected_image = random.choice(image_files)
+    image_path = os.path.join(selected_folder, selected_image)
+    mask_path = image_path.replace(").png", ")_mask.png")
+    # print(image_path)
+    # print(mask_path)
+    image = Image.open(image_path)
+    mask = Image.open(mask_path)
+    image = image.resize((256, 256))
+    mask = mask.resize((256, 256))
+    # print(image.size)
+    # print(mask.size)
 
 
+    ground_truth_mask = np.array(mask)
+    prompt = get_bounding_box(ground_truth_mask)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = model.to('cuda') 
+    # prepare image + box prompt for the model
+    inputs = processor(image, input_boxes=[[prompt]], return_tensors="pt").to(device)
+    # for k,v in inputs.items():
+    #   print(k,v.shape)
 
-#顯示最後結果(原圖、預測、答案)
-fig, axes = plt.subplots(1, 3)
-# 在子圖 1 中顯示第一張圖片
-axes[0].imshow(image)
-axes[0].set_title("origin Image")
+    model.eval()
 
-axes[1].imshow(np.array(image))
-show_mask(medsam_seg, axes[1])
-axes[1].title.set_text(f"Predicted mask")
+    # forward pass
+    with torch.no_grad():
+        outputs = model(**inputs, multimask_output=False)
+    torch.cuda.empty_cache()
+    
+    # apply sigmoid
+    medsam_seg_prob = torch.sigmoid(outputs.pred_masks.squeeze(1))
+    # convert soft mask to hard mask
+    medsam_seg_prob = medsam_seg_prob.cpu().numpy().squeeze()
+    medsam_seg = (medsam_seg_prob > 0.5).astype(np.uint8)
+    
+    plt.imshow(medsam_seg)
+    plt.axis("off")
+    
+    output_folder = config["gen_ans_img_floder"]
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
+    save_name = os.path.basename(image_path)
+    save_name += config["gen_ans_img_name"]
+    output_path = os.path.join(output_folder, save_name)
+    plt.savefig(output_path, bbox_inches="tight", pad_inches=0)
+    if is_show_compare:
+        img = Image.open(output_path)
+        img.show()
 
-axes[2].imshow(np.array(image))
-ground_truth_seg = np.array(mask)
-show_mask(ground_truth_seg, axes[2])
-axes[2].title.set_text(f"Ground truth mask")
+    if is_gen_compare:
+    #顯示最後結果(原圖、預測、答案)
+        _, axes = plt.subplots(1, 3)
+        # 在子圖 1 中顯示第一張圖片
+        axes[0].imshow(image)
+        axes[0].set_title("origin Image")
 
-#存檔
-output_folder = "save_ans"
-if not os.path.exists(output_folder):
-    os.makedirs(output_folder)
+        axes[1].imshow(np.array(image))
+        show_mask(medsam_seg, axes[1])
+        axes[1].title.set_text(f"Predicted mask")
 
-save_name = os.path.basename(image_path)
-save_name += "_ans.png"
-output_path = os.path.join(output_folder, save_name)
-plt.savefig(output_path)
+        axes[2].imshow(np.array(image))
+        ground_truth_seg = np.array(mask)
+        show_mask(ground_truth_seg, axes[2])
+        axes[2].title.set_text(f"Ground truth mask")
+        
+    #存檔
+        output_folder = config["gen_compare_img_floder"]
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
 
-plt.show()
+        save_name = os.path.basename(image_path)
+        save_name += config["gen_compare_img_name"]
+        output_path = os.path.join(output_folder, save_name)
+        plt.savefig(output_path)
+        if is_show_compare:
+            img = Image.open(output_path)
+            img.show()
+        plt.close("all")
+    
+if __name__ == "__main__":
+    import json
+    configfile_path = ".\json\config.json"
+    configfile = open(configfile_path, "r",encoding="utf-8").read()
+    config = json.loads(configfile)
+    gen_ans(config)
