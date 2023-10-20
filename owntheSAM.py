@@ -41,22 +41,25 @@ def show_mask(mask, ax, random_color=False):
 
 def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = True):
     '''
-    
+    由預訓練的模型生成圖片\n
+    config:存在config.json的參數\n
+    is_show_ans:是否在生成完後直接顯示圖片\n
+    is_gen_compare:是否生成對照圖\n
+    is_show_compare:是否在生成對照圖完後直接顯示圖片
     '''
     print("Generating ans")
     #載入model 架構
     model = SamModel.from_pretrained("facebook/sam-vit-base")
-    model.load_state_dict(torch.load("best.pth"))
+    model.load_state_dict(torch.load(config['load_state_dict']))
     processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
 
     #設定測試圖片資料夾(隨機選取圖片，normal 不適用)
-    folder_A = "./Dataset_BUSI_with_GT/malignant"
-    folder_B = "./Dataset_BUSI_with_GT/benign"
-    selected_folder = random.choice([folder_A, folder_B])
-    image_files = [f for f in os.listdir(selected_folder) if f.endswith(").png")]
+    
+    selected_folder = random.choice(config["test_folders"])
+    image_files = [f for f in os.listdir(selected_folder) if f.endswith(config['test_img_path_endswith'])]
     selected_image = random.choice(image_files)
     image_path = os.path.join(selected_folder, selected_image)
-    mask_path = image_path.replace(").png", ")_mask.png")
+    mask_path = image_path.replace(config['test_img_path_endswith'], config['test_img_mask_path_endswith'])
     # print(image_path)
     # print(mask_path)
     image = Image.open(image_path)
@@ -92,12 +95,12 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = 
     plt.imshow(medsam_seg)
     plt.axis("off")
     
-    output_folder = config["gen_ans_img_floder"]
+    output_folder = config["ans_img_floder"]
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
     save_name = os.path.basename(image_path)
-    save_name += config["gen_ans_img_name"]
+    save_name += config["ans_img_name"]
     output_path = os.path.join(output_folder, save_name)
     plt.savefig(output_path, bbox_inches="tight", pad_inches=0)
     if is_show_ans:
@@ -121,12 +124,12 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = 
         axes[2].title.set_text(f"Ground truth mask")
         
     #存檔
-        output_folder = config["gen_compare_img_floder"]
+        output_folder = config["compare_img_floder"]
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
         save_name = os.path.basename(image_path)
-        save_name += config["gen_compare_img_name"]
+        save_name += config["compare_img_name"]
         output_path = os.path.join(output_folder, save_name)
         plt.savefig(output_path)
         if is_show_compare:
