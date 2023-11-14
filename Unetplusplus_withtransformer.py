@@ -318,7 +318,7 @@ input_shape = (256,256)
 
 train_ds = BusiDataset(train_df, input_size=input_shape)
 test_ds = BusiDataset(test_df, input_size=input_shape)
-batch_size = 1
+batch_size = 15
 
 train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
 

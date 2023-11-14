@@ -142,4 +142,4 @@ if __name__ == "__main__":
     configfile_path = ".\json\config.json"
     configfile = open(configfile_path, "r",encoding="utf-8").read()
     config = json.loads(configfile)
-    gen_ans(config)
+    gen_ans(config["oentheSAM.py"])
