@@ -2,5 +2,8 @@
 __pycache__
 save_ans
 save_compare
+save_unetpp
+unetplusplus_chkpt
 json/setting.json
 test.py
+.DS_Store

@@ -1,5 +1,5 @@
 {
-    "settingfile_path":"./json/setting.json",
+    "settingfile_path":"json/setting.json",
     "window_size":"1024x720+0+0",
     "window_title":"TKU_SAM_project",
     "background1":[
@@ -12,14 +12,17 @@
     "gen_is_show_ans_text":"顯示answer圖片",
     "gen_is_gen_compare_text":"產生compare圖片",
     "gen_is_show_compare_text":"顯示compare圖片",
+    "unetpp_text":"顯示unetpp結果",
     "oentheSAM.py":{
         "ans_img_floder":"save_ans",
         "ans_img_name":"_ans.png",
         "compare_img_floder":"save_compare",
         "compare_img_name":"_compare.png",
+        "unetpp_floder":"save_unetpp",
+        "unetpp_img_name":"_unetpp.png",
         "test_folders":[
-            "./Dataset_BUSI_with_GT/benign",
-            "./Dataset_BUSI_with_GT/malignant"
+            "Dataset_BUSI_with_GT/benign",
+            "Dataset_BUSI_with_GT/malignant"
         ],
         "load_state_dict":"best.pth",
         "test_img_path_endswith":").png",

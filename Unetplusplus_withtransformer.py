@@ -14,9 +14,7 @@ import re
 benign_path = os.path.join(busi_dataset_path,"benign")
 benign_images = sorted(glob.glob(benign_path +"/*).png"))
 benign_masks = sorted(glob.glob(benign_path +"/*mask.png"))
-
 key = [int(re.findall(r'[0-9]+',image_name)[0]) for image_name in benign_images]
-
 benign_df = pd.DataFrame({'key':key,'images':benign_images,'masks':benign_masks})
 
 """ Malignant"""
@@ -24,7 +22,6 @@ malignant_path = os.path.join(busi_dataset_path,"malignant")
 malignant_images = sorted(glob.glob(malignant_path +"/*).png"))
 malignant_masks = sorted(glob.glob(malignant_path +"/*mask.png"))
 key = [int(re.findall(r'[0-9]+',image_name)[0]) + 437 for image_name in malignant_images]
-
 malignant_df = pd.DataFrame({'key':key,'images':malignant_images,'masks':malignant_masks})
 
 """ Normal """
@@ -32,11 +29,8 @@ malignant_df = pd.DataFrame({'key':key,'images':malignant_images,'masks':maligna
 normal_path = os.path.join(busi_dataset_path,"normal")
 normal_images = sorted(glob.glob(malignant_path +"/*).png"))
 normal_masks = sorted(glob.glob(malignant_path +"/*mask.png"))
-
 key = [int(re.findall(r'[0-9]+',image_name)[0]) + 648 for image_name in normal_images]
-
 normal_df = pd.DataFrame({'key':key,'images':normal_images,'masks':normal_masks})
-
 dataset_df = pd.concat([benign_df,malignant_df,normal_df])
 # print(dataset_df)
 
@@ -62,7 +56,6 @@ class BusiDataset(Dataset):
     def __getitem__(self, idx):
         # slice of the dataframe
         df_item = self.df.iloc[idx]
-
         # read the image and the mask
         img = cv.imread(df_item["images"], cv.IMREAD_GRAYSCALE)
         # Histogram equalization of input image
@@ -91,7 +84,6 @@ def dice_coefficient(preds, targets):
 import segmentation_models_pytorch as smp
 
 device = 'cuda'if torch.cuda.is_available() else 'cpu'
-
 model = smp.UnetPlusPlus(encoder_name="resnet34",
                         encoder_weights=None,
                         in_channels=1,
@@ -112,9 +104,10 @@ class Trainer:
         self,
         model: nn.Module = None,
         lr: float = 3e-4,
-        batch_size: int = 16,
-        epochs: int = 100,
-        device: str = "cuda:0",
+        batch_size: int = 5,
+        epochs: int = 10,
+        # device: str = "cuda:0",
+        device: str = "cpu",
     ) -> None:
         self.model = model
         self.lr = lr
@@ -272,7 +265,6 @@ class Trainer:
                 mask = mask.to(self.device)
                 # Get predictioin mask
                 pred_mask = self.model(image)
-
                 pred_mask = torch.sigmoid(pred_mask)
                 
                 # Calculate loss
@@ -284,7 +276,6 @@ class Trainer:
                 loss = dice_loss + 0.2 * ce_loss
 
                 epoch_loss.append(loss.detach().item())
-
                 epoch_dice.append(dice.detach().item())
                 # empty gradient
                 optimizer.zero_grad()
@@ -300,7 +291,6 @@ class Trainer:
                 validation_loss = self.evaluate(val_loader, desc=f"Eval"
                 )
                 scheduler.step(torch.tensor(validation_loss))
-
 
                 if self.early_stopping(
                     checkpoint_dir=checkpoint_dir,
@@ -321,7 +311,6 @@ test_ds = BusiDataset(test_df, input_size=input_shape)
 batch_size = 15
 
 train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
-
 test_loader = DataLoader(dataset=test_ds, batch_size=batch_size, shuffle=False)
 trainer = Trainer(model,lr=3e-4,batch_size=batch_size)
 trainer.train(train_loader,test_loader,"unetplusplus_chkpt","unetplusplus")

@@ -37,7 +37,7 @@ class Application(tk.Frame):
         self.checkbutton_base(left_frame, self.gen_is_gen_compare , self.config["gen_is_gen_compare_text"], background=self.config["background1"][0], foreground = self.config["background1"][2])       
         self.checkbutton_base(left_frame, self.gen_is_show_compare , self.config["gen_is_show_compare_text"], background=self.config["background1"][0], foreground = self.config["background1"][2])     
         self.button_base(left_frame, self.config["gen_button_text"], self.gen_ans_img, style="dark_black.TButton")
-        
+
     
     def button_base(self, window, text, fun, style=None):
         button = ttk.Button(window, text=text, command=fun, style=style)
@@ -52,10 +52,10 @@ class Application(tk.Frame):
         checkbutton = tk.Checkbutton(window, text=text, variable=var, onvalue=1, offvalue=0, background=background, foreground = "#AAA")
         checkbutton.pack()
         checkbutton.select()
-    
-        
+
+
 if __name__ == "__main__":
-    configfile = ".\json\config.json"
+    configfile = "json/config.json"
     root = tk.Tk()
     GUI = Application(configfile, master=root)
     GUI.mainloop()

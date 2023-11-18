@@ -50,7 +50,7 @@ ground_truth_mask = np.array(dataset[idx]["label"])
 prompt = get_bounding_box(ground_truth_mask)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model = model.to('cuda') 
+# model = model.to('cuda') 
 # prepare image + box prompt for the model
 inputs = processor(image, input_boxes=[[prompt]], return_tensors="pt").to(device)
 for k,v in inputs.items():

@@ -62,6 +62,8 @@ with torch.no_grad():
     pred_mask = (torch.sigmoid(pred_mask) > 0.7).int()
     dice = dice_coefficient(pred_mask,mask_tensor).cpu().item()
 
+print("Dice = ", dice)
+
 fig, axs = plt.subplots(1,3,figsize=(25,5), gridspec_kw={'wspace': 0.3, 'hspace': 0, 'width_ratios': [1, 1, 1]})
 axs[0].imshow(image)
 axs[0].set_title('Image')

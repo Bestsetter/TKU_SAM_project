@@ -39,7 +39,7 @@ def show_mask(mask, ax, random_color=False):
     mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
     ax.imshow(mask_image)
 
-def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = True):
+def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare = True):
     '''
     由預訓練的模型生成圖片\n
     config:存在config.json的參數\n
@@ -60,8 +60,8 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = 
     selected_image = random.choice(image_files)
     image_path = os.path.join(selected_folder, selected_image)
     mask_path = image_path.replace(config['test_img_path_endswith'], config['test_img_mask_path_endswith'])
-    # print(image_path)
-    # print(mask_path)
+    print(image_path)
+    print(mask_path)
     image = Image.open(image_path)
     mask = Image.open(mask_path)
     image = image.resize((256, 256))
@@ -69,11 +69,10 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = 
     # print(image.size)
     # print(mask.size)
 
-
     ground_truth_mask = np.array(mask)
     prompt = get_bounding_box(ground_truth_mask)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = model.to('cuda') 
+    # model = model.to('cuda') 
     # prepare image + box prompt for the model
     inputs = processor(image, input_boxes=[[prompt]], return_tensors="pt").to(device)
     # for k,v in inputs.items():
@@ -139,7 +138,7 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True,is_show_compare = 
     
 if __name__ == "__main__":
     import json
-    configfile_path = ".\json\config.json"
+    configfile_path = "json/config.json"
     configfile = open(configfile_path, "r",encoding="utf-8").read()
     config = json.loads(configfile)
     gen_ans(config["oentheSAM.py"])
