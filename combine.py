@@ -19,19 +19,18 @@ from PIL import Image
 device = 'cuda'if torch.cuda.is_available() else 'cpu'
 
 def get_bounding_box(ground_truth_map):
-      # get bounding box from mask
-  y_indices, x_indices = np.where(ground_truth_map > 0)
-  x_min, x_max = np.min(x_indices), np.max(x_indices)
-  y_min, y_max = np.min(y_indices), np.max(y_indices)
-  # add perturbation to bounding box coordinates
-  H, W = ground_truth_map.shape
-  x_min = max(0, x_min - np.random.randint(0, 20))
-  x_max = min(W, x_max + np.random.randint(0, 20))
-  y_min = max(0, y_min - np.random.randint(0, 20))
-  y_max = min(H, y_max + np.random.randint(0, 20))
-  bbox = [x_min, y_min, x_max, y_max]
-
-  return bbox
+    # get bounding box from mask
+    y_indices, x_indices = np.where(ground_truth_map > 0)
+    x_min, x_max = np.min(x_indices), np.max(x_indices)
+    y_min, y_max = np.min(y_indices), np.max(y_indices)
+    # add perturbation to bounding box coordinates
+    H, W = ground_truth_map.shape
+    x_min = max(0, x_min - np.random.randint(0, 20))
+    x_max = min(W, x_max + np.random.randint(0, 20))
+    y_min = max(0, y_min - np.random.randint(0, 20))
+    y_max = min(H, y_max + np.random.randint(0, 20))
+    bbox = [x_min, y_min, x_max, y_max]
+    return bbox
 
 
 def show_mask(mask, ax, random_color=False):
@@ -59,6 +58,17 @@ def dice_score(mask1, mask2):
     dice = 2.0 * intersection / union
     return dice
 
+dataset_paths = ['Dataset_BUSI_with_GT/benign/', 'Dataset_BUSI_with_GT/malignant']
+dataset_path = random.choice(dataset_paths)
+image_path = [os.path.join(dataset_path, file) for file in os.listdir(dataset_path) if file.endswith(').png')]
+image_path = random.choice(image_path)
+print(image_path)
+mask_path = image_path.replace('.png', '_mask.png')
+print(mask_path)
+save_path = os.path.relpath(image_path, dataset_path)
+print(save_path)
+
+# Unet++ model start
 model_unetpp = smp.UnetPlusPlus(encoder_name="resnet34",
                         encoder_weights=None,
                         in_channels=1,
@@ -67,19 +77,10 @@ model_unetpp = smp.UnetPlusPlus(encoder_name="resnet34",
 
 model_unetpp.load_state_dict(torch.load('unetplusplus_chkpt/unetplusplus.pth'))
 
-dataset_path = 'Dataset_BUSI_with_GT/benign/'
-image_path = [os.path.join(dataset_path, file) for file in os.listdir(dataset_path) if file.endswith(').png')]
-image_path = random.choice(image_path)
-print(image_path)
-mask_path = image_path.replace('.png', '_mask.png')
-print(mask_path)
-
 preprocess = transforms.Compose([
     transforms.Resize((256, 256)),
     transforms.ToTensor(),
 ])
-
-
 
 oimage = Image.open(image_path)
 image = Image.open(image_path).convert('L')
@@ -97,20 +98,25 @@ with torch.no_grad():
     pred_mask = (torch.sigmoid(pred_mask) > 0.7).int()
     dice = dice_coefficient(pred_mask,mask_tensor).cpu().item()
 
+# SAM model start
 model_SAM = SamModel.from_pretrained("facebook/sam-vit-base")
 model_SAM.load_state_dict(torch.load("best.pth"))
 processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
 prompt = get_bounding_box(np.array(mask))
 model_SAM = model_SAM.to('cuda') 
 inputs = processor(image, input_boxes=[[prompt]], return_tensors="pt").to(device)
-model_SAM.eval()
+
 with torch.no_grad():
+    model_SAM.eval()
     outputs = model_SAM(**inputs, multimask_output=False)
     # apply sigmoid
     medsam_seg_prob = torch.sigmoid(outputs.pred_masks.squeeze(1))
     # convert soft mask to hard mask
     medsam_seg_prob = medsam_seg_prob.cpu().numpy().squeeze()
     medsam_seg = (medsam_seg_prob > 0.5).astype(np.uint8)
+
+
+# final show
 
 fig, axs = plt.subplots(1,4)
 axs[0].imshow(oimage)
@@ -131,4 +137,6 @@ axs[3].imshow(medsam_seg, cmap='gray')
 axs[3].set_title(f"SAM's\npredict_mask\ndice = {dice_score(mask, medsam_seg) :.2f}")
 axs[3].axis('off')
 
+save_path = f'save_ans/completion_of_{save_path}'
+plt.savefig(save_path)
 plt.show()
