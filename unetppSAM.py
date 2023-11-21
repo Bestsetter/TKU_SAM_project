@@ -4,8 +4,7 @@ import os
 from PIL import Image
 
 import matplotlib 
-# matplotlib.use('Agg')
-# matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from datasets import load_dataset
@@ -45,6 +44,7 @@ def show_mask(mask, ax, color=False, random_color=False):
         color = np.array([70/255, 150/255, 255/255, 0.5])
     else:
         color = np.array([30/255, 144/255, 255/255, 0.6])
+    # print("mask.shape = ", mask.shape)
     h, w = mask.shape[-2:]
     mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
     ax.imshow(mask_image)
@@ -59,7 +59,7 @@ def dice_coefficient(preds, targets):
         dice = (2.0 * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth)
         return dice
 
-def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare = True, is_unetpp = True):
+def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare = True):
     print("Generating ans")
     #載入model 架構
     model = SamModel.from_pretrained("facebook/sam-vit-base")
@@ -75,7 +75,6 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
     mask_path = image_path.replace(config['test_img_path_endswith'], config['test_img_mask_path_endswith'])
     print(image_path)
     print(mask_path)
-
     image = Image.open(image_path)
     mask = Image.open(mask_path)
     image = image.resize((256, 256))
@@ -146,10 +145,6 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
         # print("Dice = ", dice)
 
         _, axs = plt.subplots(1, 4)
-        # _, axs = plt.subplots(1, 5)
-
-        # print("SAM pred_mask:\n", medsam_seg)
-        # print("Unet-pp pred_mask:\n", pred_mask)
 
         axs[0].imshow(image)
         axs[0].set_title("origin")
@@ -164,9 +159,11 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
         axs[2].imshow(np.array(image))
         show_mask(medsam_seg, axs[2], "green")
         axs[2].set_title('SAM predict')
-        medsam_seg = [[medsam_seg]]
         medsam_seg = torch.tensor(medsam_seg)
-        # print("After process SAM pred_mask:\n", medsam_seg)
+        # print("SAM pred_mask:\n", medsam_seg)
+        # print("mask_tensor:\n", mask_tensor)
+        mask_tensor = torch.squeeze(mask_tensor)
+        # print("After squeeze mask_tensor:\n", mask_tensor)
         dice = dice_coefficient(medsam_seg, mask_tensor).cpu().item()
         print("SAM dice = ", dice)
         axs[2].set_title(f"SAM predict\ndice = {dice :.2f}")
@@ -174,7 +171,10 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
 
         axs[3].imshow(np.array(image))
         show_mask(pred_mask[0, 0].cpu().numpy(), axs[3], "red")
-        dice = dice_coefficient(pred_mask,mask_tensor).cpu().item()
+        # print("pred_mask = \n", pred_mask)
+        pred_mask = torch.squeeze(pred_mask)
+        # print("After squeeze pred_mask = \n", pred_mask)
+        dice = dice_coefficient(pred_mask, mask_tensor).cpu().item()
         print("Unet-pp dice = ", dice)
         axs[3].set_title(f"Unet-pp predict\ndice = {dice :.2f}")
         axs[3].axis('off')
@@ -187,12 +187,12 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
         # axs[4].title.set_text(f"All in one")
         # axs[4].axis('off')
 
-        output_folder = config["unetpp_floder"]
+        output_folder = config["compare_all_floder"]
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
         save_name = os.path.basename(image_path)
-        save_name += config["unetpp_img_name"]
+        save_name += config["compare_all_img_name"]
         output_path = os.path.join(output_folder, save_name)
         plt.savefig(output_path)
         if is_show_compare:

@@ -1,6 +1,6 @@
 {
     "settingfile_path":"json/setting.json",
-    "window_size":"1024x720+0+0",
+    "window_size":"1024x700",
     "window_title":"TKU_SAM_project",
     "background1":[
         "#181818",
@@ -18,8 +18,8 @@
         "ans_img_name":"_ans.png",
         "compare_img_floder":"save_compare",
         "compare_img_name":"_compare.png",
-        "unetpp_floder":"save_unetpp",
-        "unetpp_img_name":"_unetpp.png",
+        "compare_all_floder":"save_compare_all",
+        "compare_all_img_name":"_compare_all.png",
         "test_folders":[
             "Dataset_BUSI_with_GT/benign",
             "Dataset_BUSI_with_GT/malignant"
