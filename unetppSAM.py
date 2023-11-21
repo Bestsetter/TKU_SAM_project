@@ -102,7 +102,7 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
     medsam_seg_prob = torch.sigmoid(outputs.pred_masks.squeeze(1))
     # convert soft mask to hard mask
     medsam_seg_prob = medsam_seg_prob.cpu().numpy().squeeze()
-    medsam_seg = (medsam_seg_prob > 0.5).astype(np.uint8)
+    medsam_seg = (medsam_seg_prob > 0.5).astype(np.int32)
     
     plt.imshow(medsam_seg)
     plt.axis("off")
