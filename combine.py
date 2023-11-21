@@ -125,16 +125,18 @@ axs[0].axis('off')
 axs[1].imshow(mask)
 axs[1].set_title('Mask')
 axs[1].axis('off')
-axs[2].imshow(pred_mask[0, 0].cpu().numpy(), cmap='gray')  # 取第一張圖的第一個通道的內容
-axs[2].set_title(f"Unet++'s\npredict_mask\ndice = {dice :.2f}")
+
+axs[2].imshow(medsam_seg, cmap='gray')
+axs[2].set_title(f"SAM's\npredict_mask\ndice = {dice_score(mask, medsam_seg) :.2f}")
 axs[2].axis('off')
+
+
 
 # 原藍遮罩
 # axs[3].imshow(np.array(oimage))
 # show_mask(medsam_seg, axs[3])
-
-axs[3].imshow(medsam_seg, cmap='gray')
-axs[3].set_title(f"SAM's\npredict_mask\ndice = {dice_score(mask, medsam_seg) :.2f}")
+axs[3].imshow(pred_mask[0, 0].cpu().numpy(), cmap='gray')  # 取第一張圖的第一個通道的內容
+axs[3].set_title(f"Unet++'s\npredict_mask\ndice = {dice :.2f}")
 axs[3].axis('off')
 
 save_path = f'save_ans/completion_of_{save_path}'

@@ -50,14 +50,19 @@ def show_mask(mask, ax, color=False, random_color=False):
     ax.imshow(mask_image)
 
 def dice_coefficient(preds, targets):
-        smooth = 1.0
-        assert preds.size() == targets.size()
+    smooth = 1.0
+    assert preds.size() == targets.size()
 
-        iflat = preds.contiguous().view(-1)
-        tflat = targets.contiguous().view(-1)
-        intersection = (iflat * tflat).sum()
-        dice = (2.0 * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth)
-        return dice
+    if preds.device != targets.device:
+        # 將targets移動到與preds相同的設備上
+        targets = targets.to(preds.device)
+
+    iflat = preds.contiguous().view(-1)
+    tflat = targets.contiguous().view(-1)
+    intersection = (iflat * tflat).sum()
+    dice = (2.0 * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth)
+    return dice
+
 
 def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare = True):
     print("Generating ans")
@@ -85,7 +90,7 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
     ground_truth_mask = np.array(mask)
     prompt = get_bounding_box(ground_truth_mask)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    # model = model.to('cuda')
+    model = model.to('cuda')
     # prepare image + box prompt for the model
     inputs = processor(image, input_boxes=[[prompt]], return_tensors="pt").to(device)
     # for k,v in inputs.items():
@@ -102,7 +107,7 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
     medsam_seg_prob = torch.sigmoid(outputs.pred_masks.squeeze(1))
     # convert soft mask to hard mask
     medsam_seg_prob = medsam_seg_prob.cpu().numpy().squeeze()
-    medsam_seg = (medsam_seg_prob > 0.5).astype(np.uint8)
+    medsam_seg = (medsam_seg_prob > 0.5).astype(np.int32)
     
     plt.imshow(medsam_seg)
     plt.axis("off")
@@ -160,25 +165,20 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
         show_mask(medsam_seg, axs[2], "green")
         axs[2].set_title('SAM predict')
         medsam_seg = torch.tensor(medsam_seg)
-        # print("SAM pred_mask:\n", medsam_seg)
-        # print("mask_tensor:\n", mask_tensor)
         mask_tensor = torch.squeeze(mask_tensor)
-        # print("After squeeze mask_tensor:\n", mask_tensor)
-        dice = dice_coefficient(medsam_seg, mask_tensor).cpu().item()
-        print("SAM dice = ", dice)
-        axs[2].set_title(f"SAM predict\ndice = {dice :.2f}")
+        dice = dice_coefficient(medsam_seg, mask_tensor)
+        axs[2].set_title(f"SAM's\npredict_mask\ndice = {dice :.2f}")
         axs[2].axis('off')
+
 
         axs[3].imshow(np.array(image))
         show_mask(pred_mask[0, 0].cpu().numpy(), axs[3], "red")
-        # print("pred_mask = \n", pred_mask)
         pred_mask = torch.squeeze(pred_mask)
-        # print("After squeeze pred_mask = \n", pred_mask)
         dice = dice_coefficient(pred_mask, mask_tensor).cpu().item()
-        print("Unet-pp dice = ", dice)
-        axs[3].set_title(f"Unet-pp predict\ndice = {dice :.2f}")
+        axs[3].set_title(f"Unet++'s\npredict_mask\ndice = {dice :.2f}")
         axs[3].axis('off')
 
+        # 疊圖
         # axs[4].imshow(np.array(uimage), alpha=0.3)
         # ground_truth_seg = np.array(mask)
         # show_mask(ground_truth_seg, axs[4], "blue")
@@ -203,7 +203,7 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
     
 if __name__ == "__main__":
     import json
-    configfile_path = "json/config.json"
+    configfile_path = "json\config.json"
     configfile = open(configfile_path, "r",encoding="utf-8").read()
     config = json.loads(configfile)
     gen_ans(config["oentheSAM.py"])
