@@ -89,7 +89,11 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
     ground_truth_mask = np.array(mask)
     prompt = get_bounding_box(ground_truth_mask)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    # model = model.to('cuda')
+<<<<<<< HEAD
+    model = model.to('cuda')
+=======
+    model = model.to(device)
+>>>>>>> c47f2af44f5c5a05573d17a4821a983cafaf13a7
     # prepare image + box prompt for the model
     inputs = processor(image, input_boxes=[[prompt]], return_tensors="pt").to(device)
     # for k,v in inputs.items():
