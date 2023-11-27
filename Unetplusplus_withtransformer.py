@@ -92,7 +92,7 @@ model = smp.UnetPlusPlus(encoder_name="resnet34",
                         
 import json
 from datetime import datetime
-import pandas as pd
+# import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
@@ -104,8 +104,8 @@ class Trainer:
         self,
         model: nn.Module = None,
         lr: float = 3e-4,
-        batch_size: int = 5,
-        epochs: int = 10,
+        batch_size: int = 10,
+        epochs: int = 50,
         # device: str = "cuda:0",
         device: str = "cpu",
     ) -> None:
@@ -308,7 +308,7 @@ input_shape = (256,256)
 
 train_ds = BusiDataset(train_df, input_size=input_shape)
 test_ds = BusiDataset(test_df, input_size=input_shape)
-batch_size = 15
+batch_size = 10
 
 train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(dataset=test_ds, batch_size=batch_size, shuffle=False)
