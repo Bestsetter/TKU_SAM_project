@@ -104,10 +104,10 @@ class Trainer:
         self,
         model: nn.Module = None,
         lr: float = 3e-4,
-        batch_size: int = 5,
-        epochs: int = 10,
-        # device: str = "cuda:0",
-        device: str = "cpu",
+        batch_size: int = 60,
+        epochs: int = 60,
+        device: str = "cuda:0",
+        # device: str = "cpu",
     ) -> None:
         self.model = model
         self.lr = lr
