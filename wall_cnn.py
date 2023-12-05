@@ -152,12 +152,75 @@ class resNet(nn.Module):
         print('6', output.shape)
         return output
         
-x = torch.randn(10,3,228,228)
-model = resNet()
-print('in', x.shape)
-print('m',model(x).shape)
+import cv2 as cv 
+import torch
+from torch.utils.data import Dataset
+import torchvision.transforms.functional as TF
+from torchvision import transforms
 
-# x = torch.randn(10,3,224,224)
-# y = torch.randn(10,3,224,224)
-# print(torch.cat([x, y], dim=1).shape)
+
+class data_classif(Dataset):
+    def __init__(self, image_pd, input_size=(256, 256)):
+        self.image_pd = image_pd
+        self.input_size = input_size
+    def __len__(self):
+        return len(self.image_pd)
+    def __getitem__(self, index):
+        df_item = self.image_pd.iloc[index]
+        image = cv.imread(df_item['images'], cv.IMREAD_GRAYSCALE)
+        
+        if "benign" in df_item['images']:
+            target = torch.tensor([1,0,0])
+        elif "malignant" in df_item['images']:
+            target = torch.tensor([0,1,0])
+        elif "normal" in df_item['images']:
+            target = torch.tensor([0,0,1])
+        else:
+            print("data error")
+
+        image = TF.to_tensor(image)
+        target = TF.to_tensor(target)
+
+        resize = transforms.Resize(size=self.input_size,antialias=True)
+        image = resize(image)
+        return image, target
+
+def CNN_train(
+    epoch=20,
+    batch=20
+):
+    import os
+    import pandas as pd
+    import glob
+    busi_dataset_path = "Dataset_BUSI_with_GT"
+    import re
+    """ Benign """
+    benign_path = os.path.join(busi_dataset_path,"benign")
+    benign_images = sorted(glob.glob(benign_path +"/*).png"))
+    benign_masks = sorted(glob.glob(benign_path +"/*mask.png"))
+    key = [int(re.findall(r'[0-9]+',image_name)[0]) for image_name in benign_images]
+    benign_df = pd.DataFrame({'key':key,'images':benign_images,'masks':benign_masks})
+
+    """ Malignant"""
+    malignant_path = os.path.join(busi_dataset_path,"malignant")
+    malignant_images = sorted(glob.glob(malignant_path +"/*).png"))
+    malignant_masks = sorted(glob.glob(malignant_path +"/*mask.png"))
+    key = [int(re.findall(r'[0-9]+',image_name)[0]) + 437 for image_name in malignant_images]
+    malignant_df = pd.DataFrame({'key':key,'images':malignant_images,'masks':malignant_masks})
+
+    """ Normal """
+
+    normal_path = os.path.join(busi_dataset_path,"normal")
+    normal_images = sorted(glob.glob(malignant_path +"/*).png"))
+    normal_masks = sorted(glob.glob(malignant_path +"/*mask.png"))
+    key = [int(re.findall(r'[0-9]+',image_name)[0]) + 648 for image_name in normal_images]
+    normal_df = pd.DataFrame({'key':key,'images':normal_images,'masks':normal_masks})
+    dataset_df = pd.concat([benign_df,malignant_df,normal_df])
+
+    device = 'cuda'if torch.cuda.is_available() else 'cpu'
+    model = resNet(1,3).to(device=device)
+
+    data = data_classif(dataset_df, )
+
+CNN_train()
 

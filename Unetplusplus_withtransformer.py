@@ -104,8 +104,8 @@ class Trainer:
         self,
         model: nn.Module = None,
         lr: float = 3e-4,
-        batch_size: int = 60,
-        epochs: int = 60,
+        batch_size: int = 30,
+        epochs: int = 150,
         device: str = "cuda:0",
         # devigitce: str = "cpu",
     ) -> None:
