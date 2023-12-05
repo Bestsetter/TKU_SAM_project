@@ -169,13 +169,13 @@ class resNet(nn.Module):
         output = self.fc_pool(output)
         # print('4.5', output.shape)
         output = output.reshape(output.shape[0], -1)
-        output = self.d1normal1024(output)
+        # output = self.d1normal1024(output)
         # print('5', output.shape)
         output = self.drop(self.linear1024to1024(output))
-        output = self.d1normal1024(output)
+        # output = self.d1normal1024(output)
         output = self.relu(self.linear1024to1024(output))
         output = self.drop(self.linear1024to1024(output))
-        output = self.d1normal1024(output)
+        # output = self.d1normal1024(output)
         output = self.relu(self.linear1024to2(output))
         # print('6', output.shape)
         return output
@@ -223,13 +223,14 @@ def dice_coefficient(preds, targets):
     return dice
 
 def CNN_train(
-    epoch=3,
-    batch=5
+    epoch=40,
+    batch=20
 ):
     import os
     import pandas as pd
     import glob
     busi_dataset_path = "Dataset_BUSI_with_GT"
+
     import re
     """ Benign """
     benign_path = os.path.join(busi_dataset_path,"benign")
@@ -269,7 +270,7 @@ def CNN_train(
     optimizer = optim.Adam(model.parameters(), 0.001)
     loss_f = nn.CrossEntropyLoss() if model.out_channel > 1 else nn.BCEWithLogitsLoss()
 
-    for e in range(1, epoch):
+    for e in range(0, epoch):
         epoch_loss = 0
         # from tqdm import tqdm
         for idx, (predictor, target) in enumerate(train_deter_Loader):
@@ -282,11 +283,45 @@ def CNN_train(
             optimizer.step()
             epoch_loss += loss.item()
             print(f"\t\tBatch {idx+1} done, with loss = {loss}")
-        print(f"[+] epoch {epoch+1} done, with loss = {epoch_loss/len(train_deter_Loader)}")
+        print(f"[+] epoch {e+1} done, with loss = {epoch_loss/len(train_deter_Loader)}\n")
+
+        dice_all = 0
+        for idx, (predictor, target) in enumerate(test_deter_Loader):
+            
+            predictor = predictor.to('cpu', torch.float32)
+            target = target.to('cpu', torch.float32)
+            prediction = torch.sigmoid(model(predictor))
+            dice = dice_coefficient(prediction, target)
+            prediction = torch.where(prediction > 0.5, 1, 0)
+            print('pred', prediction)
+            print('target', target)
+            print('dice =', dice)
+            dice_all += dice
+        if len(test_deter_Loader) != 0:
+            print(f"[+] test avg dice -> {dice_all/len(test_deter_Loader)}\n")
+
     return model
 
 
 model = CNN_train()
 
+## for testing
 
+from torchvision import transforms
+import torchvision.transforms.functional as TF
 
+# 自己設要測試的資料
+image = cv.imread("Dataset_BUSI_with_GT/malignant/malignant (1).png", cv.IMREAD_GRAYSCALE)
+image = TF.to_tensor(image)
+resize = transforms.Resize(size=(256,256),antialias=True)
+image = resize(image).unsqueeze(0)
+
+print("[benign, malignant, normal]")
+prediction = torch.sigmoid(model(image))
+prediction = torch.where(prediction > 0.5, 1, 0)
+print(prediction)
+
+# x = torch.randn(1, 1,256,256)
+# m = resNet()
+# print(x.shape)
+# print(m(x).shape)
