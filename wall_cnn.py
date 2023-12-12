@@ -45,7 +45,9 @@ class resNet(nn.Module):
 
     
     def forward(self, x):
+        # print('0.2', x.shape)
         output = self.x7conv3to64(x)
+        # print('0.3', output.shape)
         output = self.pool(output)
         # print('1',output.shape)
         res = self.x3conv64to64(output)
@@ -169,13 +171,13 @@ class resNet(nn.Module):
         output = self.fc_pool(output)
         # print('4.5', output.shape)
         output = output.reshape(output.shape[0], -1)
-        # output = self.d1normal1024(output)
+        output = self.d1normal1024(output)
         # print('5', output.shape)
         output = self.drop(self.linear1024to1024(output))
-        # output = self.d1normal1024(output)
+        output = self.d1normal1024(output)
         output = self.relu(self.linear1024to1024(output))
         output = self.drop(self.linear1024to1024(output))
-        # output = self.d1normal1024(output)
+        output = self.d1normal1024(output)
         output = self.relu(self.linear1024to2(output))
         # print('6', output.shape)
         return output
@@ -267,7 +269,7 @@ def CNN_train(
     test_deter_Loader = DataLoader(test_data, batch, shuffle=False, drop_last=True)
 
     import torch.optim as optim
-    optimizer = optim.Adam(model.parameters(), 0.001)
+    optimizer = optim.Adam(model.parameters(), 0.0001)
     loss_f = nn.CrossEntropyLoss() if model.out_channel > 1 else nn.BCEWithLogitsLoss()
 
     for e in range(0, epoch):
@@ -286,19 +288,26 @@ def CNN_train(
         print(f"[+] epoch {e+1} done, with loss = {epoch_loss/len(train_deter_Loader)}\n")
 
         dice_all = 0
+        acc_all = 0
         for idx, (predictor, target) in enumerate(test_deter_Loader):
             
-            predictor = predictor.to('cpu', torch.float32)
-            target = target.to('cpu', torch.float32)
+            predictor = predictor.to(device, torch.float32)
+            target = target.to(device, torch.float32)
             prediction = torch.sigmoid(model(predictor))
             dice = dice_coefficient(prediction, target)
             prediction = torch.where(prediction > 0.5, 1, 0)
             print('pred', prediction)
             print('target', target)
             print('dice =', dice)
+            from sklearn.metrics import accuracy_score
+            p = prediction.to('cpu')
+            t = target.to('cpu')
+            print('acc =', accuracy_score(p, t))
             dice_all += dice
+            acc_all += accuracy_score(p, t)
         if len(test_deter_Loader) != 0:
             print(f"[+] test avg dice -> {dice_all/len(test_deter_Loader)}\n")
+            print(f"[+] test avg acc -> {acc_all/len(test_deter_Loader)}\n")
 
     return model
 
