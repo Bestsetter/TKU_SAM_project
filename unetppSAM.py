@@ -1,5 +1,4 @@
-import numpy as np 
-import pandas as pd 
+import numpy as np
 import os
 from PIL import Image
 
@@ -10,7 +9,7 @@ import matplotlib.pyplot as plt
 from datasets import load_dataset
 from transformers import SamProcessor
 import torch
-from transformers import SamModel 
+from transformers import SamModel
 import random
 from datasets import DatasetDict, load_dataset
 import os
@@ -90,7 +89,7 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
     ground_truth_mask = np.array(mask)
     prompt = get_bounding_box(ground_truth_mask)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = model.to('cuda')
+    model = model.to(device)
     # prepare image + box prompt for the model
     inputs = processor(image, input_boxes=[[prompt]], return_tensors="pt").to(device)
     # for k,v in inputs.items():
@@ -179,11 +178,11 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
         axs[3].axis('off')
 
         # 疊圖
-        # axs[4].imshow(np.array(uimage), alpha=0.3)
+        # axs[4].imshow(np.array(image), alpha=0.3)
         # ground_truth_seg = np.array(mask)
         # show_mask(ground_truth_seg, axs[4], "blue")
         # show_mask(medsam_seg, axs[4], "green")
-        # show_mask(pred_mask[0, 0].cpu().numpy(), axs[4], "red")
+        # show_mask(pred_mask, axs[4], "red")
         # axs[4].title.set_text(f"All in one")
         # axs[4].axis('off')
 
@@ -203,7 +202,7 @@ def gen_ans(config, is_show_ans = True, is_gen_compare = True, is_show_compare =
     
 if __name__ == "__main__":
     import json
-    configfile_path = "json\config.json"
+    configfile_path = "json/config.json"
     configfile = open(configfile_path, "r",encoding="utf-8").read()
     config = json.loads(configfile)
     gen_ans(config["oentheSAM.py"])
