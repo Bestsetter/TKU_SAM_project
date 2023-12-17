@@ -138,9 +138,11 @@ class Resnet(nn.Module):
         output = F.sigmoid(self.conv10(c9))
         return output
 
-X_train_tensor = torch.Tensor(X_train).unsqueeze(1).squeeze(4)
+X_train_tensor = torch.Tensor(X_train).unsqueeze(1).squeeze(4).to("cuda:0")
 y_train_tensor = torch.Tensor(y_train).unsqueeze(1)
+
 model = Resnet(num_filters=16, dropout=0.1, do_batch_norm=True)
+model = model.to("cuda:0")
 criterion = nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 num_epochs = 10
