@@ -16,12 +16,12 @@ def import_images(folder,target):
     return images
 
 # 類別
-print(os.listdir("D:/TKU_SAM_project/Dataset_BUSI_with_GT/"))
+print(os.listdir("Dataset_BUSI_with_GT/"))
 # ['benign', 'malignant', 'normal']
 
-bengin = import_images("D:/TKU_SAM_project/Dataset_BUSI_with_GT/benign/",0)
-malignant = import_images("D:/TKU_SAM_project/Dataset_BUSI_with_GT/malignant/",1)
-normal = import_images("D:/TKU_SAM_project/Dataset_BUSI_with_GT/normal/",2)
+bengin = import_images("Dataset_BUSI_with_GT/benign/",0)
+malignant = import_images("Dataset_BUSI_with_GT/malignant/",1)
+normal = import_images("Dataset_BUSI_with_GT/normal/",2)
 
 full_data = bengin+malignant+normal
 
@@ -48,6 +48,12 @@ print(np.array(X).shape[2])
 X_M = np.array(X)
 X_M_R = X_M.reshape(X_M.shape[0], X_M.shape[1], X_M.shape[2], 1)
 X_train,X_test,y_train,y_test = train_test_split(X_M_R,label)
+
+batch_size = 4  # 請根據需要調整這個值
+
+# 創建 DataLoader
+train_loader = torch.utils.data.DataLoader(list(zip(X_train, y_train)), batch_size=batch_size, shuffle=True)
+test_loader = torch.utils.data.DataLoader(list(zip(X_test, y_test)), batch_size=batch_size, shuffle=False)
 
 print("X_train size: ",X_train.shape)
 print("X_test Size: ",X_test.shape)
@@ -138,14 +144,22 @@ class Resnet(nn.Module):
         output = F.sigmoid(self.conv10(c9))
         return output
 
-X_train_tensor = torch.Tensor(X_train).unsqueeze(1).squeeze(4).to("cuda:0")
-y_train_tensor = torch.Tensor(y_train).unsqueeze(1)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-model = Resnet(num_filters=16, dropout=0.1, do_batch_norm=True)
-model = model.to("cuda:0")
+# 將數據轉換為 GPU 上的 Tensor
+X_train_tensor = torch.Tensor(X_train).unsqueeze(1).squeeze(3).to(device)
+y_train_tensor = torch.Tensor(y_train).unsqueeze(1).to(device)
+
+X_test_tensor = torch.Tensor(X_test).unsqueeze(1).to(device)
+y_test_tensor = torch.Tensor(y_test).unsqueeze(1).to(device)
+
+
+model = Resnet(num_filters=8, dropout=0.1, do_batch_norm=True)
+model = model.to(device)
 criterion = nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 num_epochs = 10
+
 for epoch in range(num_epochs):
     model.train()
     optimizer.zero_grad()
@@ -155,6 +169,7 @@ for epoch in range(num_epochs):
     optimizer.step()
 
     print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}')
+
 
 model.eval()
 with torch.no_grad():
