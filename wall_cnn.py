@@ -211,8 +211,13 @@ class data_classif(Dataset):
             target = torch.tensor([1,0])
         elif "malignant" in df_item['images']:
             target = torch.tensor([0,1])
+<<<<<<< HEAD
         # elif "normal" in df_item['images']:
         #     target = torch.tensor([0,0,1])
+=======
+#        elif "normal" in df_item['images']:
+#            target = torch.tensor([0,0,1])
+>>>>>>> 3890dcb0a299ecadcbc0c669e27c11946d4236b3
         else:
             print("data error")
 
@@ -253,12 +258,19 @@ def CNN_train(
     normal_masks = sorted(glob.glob(normal_path +"/*mask.png"))
     key = [int(re.findall(r'[0-9]+',image_name)[0]) + 648 for image_name in normal_images]
     normal_df = pd.DataFrame({'key':key,'images':normal_images,'masks':normal_masks})
+<<<<<<< HEAD
     # dataset_df = pd.concat([benign_df,malignant_df,normal_df])
     dataset_df = pd.concat([benign_df,malignant_df])
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # model = resNet(1,3)
     model = resNet(1,2)
     model.to(device=device)
+=======
+    dataset_df = pd.concat([benign_df,malignant_df])
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = resNet(1,2)
+    model.cuda()
+>>>>>>> 3890dcb0a299ecadcbc0c669e27c11946d4236b3
     data = data_classif(dataset_df)
 
     from torch.utils.data import random_split
@@ -295,8 +307,8 @@ def CNN_train(
             target = target.to(device, torch.float32)
             prediction = torch.sigmoid(model(predictor))
             prediction = torch.where(prediction > 0.5, 1, 0)
-            # print('pred', prediction[-10:])
-            # print('target', target.to(int)[-10:])
+            print('pred', prediction[-10:])
+            print('target', target.to(int)[-10:])
             from sklearn.metrics import accuracy_score
             p = prediction.to('cpu')
             t = target.to('cpu')
