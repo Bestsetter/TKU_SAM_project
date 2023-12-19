@@ -185,7 +185,7 @@ class resNet(nn.Module):
         output = self.drop(self.relu(self.linear1024to1024(output)))
         if output.shape[0] > 1:
             output = self.d1normal1024(output)
-        output = self.relu(self.linear1024toout(output))
+        output = self.linear1024toout(output)
         # print('device =', output.device)
         # print('6', output.shape)
         return output
@@ -211,13 +211,8 @@ class data_classif(Dataset):
             target = torch.tensor([1,0])
         elif "malignant" in df_item['images']:
             target = torch.tensor([0,1])
-<<<<<<< HEAD
         # elif "normal" in df_item['images']:
         #     target = torch.tensor([0,0,1])
-=======
-#        elif "normal" in df_item['images']:
-#            target = torch.tensor([0,0,1])
->>>>>>> 3890dcb0a299ecadcbc0c669e27c11946d4236b3
         else:
             print("data error")
 
@@ -228,7 +223,8 @@ class data_classif(Dataset):
         return image, target
 
 def CNN_train(
-    epoch=50,
+    load='',
+    epoch=60,
     batch=32
 ):
     import os
@@ -258,19 +254,16 @@ def CNN_train(
     normal_masks = sorted(glob.glob(normal_path +"/*mask.png"))
     key = [int(re.findall(r'[0-9]+',image_name)[0]) + 648 for image_name in normal_images]
     normal_df = pd.DataFrame({'key':key,'images':normal_images,'masks':normal_masks})
-<<<<<<< HEAD
     # dataset_df = pd.concat([benign_df,malignant_df,normal_df])
     dataset_df = pd.concat([benign_df,malignant_df])
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # model = resNet(1,3)
-    model = resNet(1,2)
+    if load != '':
+        model = torch.load(load)
+        return model
+    else:
+        model = resNet(1,2)
     model.to(device=device)
-=======
-    dataset_df = pd.concat([benign_df,malignant_df])
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = resNet(1,2)
-    model.cuda()
->>>>>>> 3890dcb0a299ecadcbc0c669e27c11946d4236b3
     data = data_classif(dataset_df)
 
     from torch.utils.data import random_split
@@ -305,10 +298,12 @@ def CNN_train(
             
             predictor = predictor.to(device, torch.float32)
             target = target.to(device, torch.float32)
-            prediction = torch.sigmoid(model(predictor))
+            pp = model(predictor)
+            prediction = torch.sigmoid(pp)
             prediction = torch.where(prediction > 0.5, 1, 0)
-            print('pred', prediction[-10:])
-            print('target', target.to(int)[-10:])
+            print('pred\n', prediction[-10:])
+            print('pp\n', pp[-10:])
+            print('target\n', target.to(int)[-10:])
             from sklearn.metrics import accuracy_score
             p = prediction.to('cpu')
             t = target.to('cpu')
@@ -321,7 +316,7 @@ def CNN_train(
 
     return model
 
-
+load="./cnn_model/e30_acc89.06%.pth"
 model = CNN_train()
 
 ## for testing
@@ -330,17 +325,17 @@ from torchvision import transforms
 import torchvision.transforms.functional as TF
 
 # 自己設要測試的資料
-# image = cv.imread("Dataset_BUSI_with_GT/malignant/malignant (1).png", cv.IMREAD_GRAYSCALE)
-# image = TF.to_tensor(image)
-# resize = transforms.Resize(size=(256,256),antialias=True)
-# image = resize(image).to('cuda').unsqueeze(0)
+image = cv.imread("Dataset_BUSI_with_GT/benign/benign (434).png", cv.IMREAD_GRAYSCALE)
+image = TF.to_tensor(image)
+resize = transforms.Resize(size=(256,256),antialias=True)
+image = resize(image).to('cuda').unsqueeze(0)
 # print("img", image.shape)
-# print("[benign, malignant, normal]")
-# prediction = torch.sigmoid(model(image))
+print("[benign, malignant]")
+prediction = model(image)
 # prediction = torch.where(prediction > 0.5, 1, 0)
-# print(prediction)
+print(prediction)
 
-# x = torch.randn(1, 1,256,256)
-# m = resNet()
+x = torch.randn(1, 1,256,256)
+m = resNet()
 # print(x.shape)
 # print(m(x).shape)
