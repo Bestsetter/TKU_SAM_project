@@ -224,8 +224,8 @@ class data_classif(Dataset):
 
 def CNN_train(
     load='',
-    epoch=60,
-    batch=32
+    epoch=150,
+    batch=64
 ):
     import os
     import pandas as pd
