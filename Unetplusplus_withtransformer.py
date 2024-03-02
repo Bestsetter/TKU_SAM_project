@@ -6,33 +6,8 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import torchvision.transforms.functional as TF
 import torch
-
-busi_dataset_path = "Dataset_BUSI_with_GT"
-
 import re
-""" Benign """
-benign_path = os.path.join(busi_dataset_path,"benign")
-benign_images = sorted(glob.glob(benign_path +"/*).png"))
-benign_masks = sorted(glob.glob(benign_path +"/*mask.png"))
-key = [int(re.findall(r'[0-9]+',image_name)[0]) for image_name in benign_images]
-benign_df = pd.DataFrame({'key':key,'images':benign_images,'masks':benign_masks})
-
-""" Malignant"""
-malignant_path = os.path.join(busi_dataset_path,"malignant")
-malignant_images = sorted(glob.glob(malignant_path +"/*).png"))
-malignant_masks = sorted(glob.glob(malignant_path +"/*mask.png"))
-key = [int(re.findall(r'[0-9]+',image_name)[0]) + 437 for image_name in malignant_images]
-malignant_df = pd.DataFrame({'key':key,'images':malignant_images,'masks':malignant_masks})
-
-""" Normal """
-
-normal_path = os.path.join(busi_dataset_path,"normal")
-normal_images = sorted(glob.glob(malignant_path +"/*).png"))
-normal_masks = sorted(glob.glob(malignant_path +"/*mask.png"))
-key = [int(re.findall(r'[0-9]+',image_name)[0]) + 648 for image_name in normal_images]
-normal_df = pd.DataFrame({'key':key,'images':normal_images,'masks':normal_masks})
-dataset_df = pd.concat([benign_df,malignant_df,normal_df])
-# print(dataset_df)
+import matplotlib.pyplot as plt
 
 class BusiDataset(Dataset):
     """Pytorch dataset class for generating batch of transformed images
@@ -73,28 +48,18 @@ class BusiDataset(Dataset):
 
 def dice_coefficient(preds, targets):
     smooth = 1.0
+    # print(preds.size(), targets.size())
     assert preds.size() == targets.size()
 
     iflat = preds.contiguous().view(-1)
     tflat = targets.contiguous().view(-1)
     intersection = (iflat * tflat).sum()
     dice = (2.0 * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth)
-    return dice
-
-import segmentation_models_pytorch as smp
-
-device = 'cuda'if torch.cuda.is_available() else 'cpu'
-model = smp.UnetPlusPlus(encoder_name="resnet34",
-                        encoder_weights=None,
-                        in_channels=1,
-                        classes=1,
-                        ).to(device)
-                        
+    return dice                        
 import json
 from datetime import datetime
 # import pandas as pd
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -186,7 +151,7 @@ class Trainer:
 
             dice_loss = 1 - dice
             ce_loss = binary_ce_loss(pred_mask, mask)
-            loss = dice_loss + 0.2 * ce_loss
+            loss = 0.8 * dice_loss + 0.2 * ce_loss
             val_loss.append(loss.detach().item())
 
             val_dice.append(dice.detach().item())
@@ -247,6 +212,7 @@ class Trainer:
         val_loader: DataLoader,
         checkpoint_dir: str,
         checkpoint_name: str,
+        isearly_stopping: bool = 1 ,
     ):
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=0.001)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -269,11 +235,11 @@ class Trainer:
                 
                 # Calculate loss
                 dice = dice_coefficient(pred_mask, mask)
-
+                
                 dice_loss = 1 - dice
 
                 ce_loss = binary_ce_loss(pred_mask, mask)
-                loss = dice_loss + 0.2 * ce_loss
+                loss = 0.8 * dice_loss + 0.2 * ce_loss
 
                 epoch_loss.append(loss.detach().item())
                 epoch_dice.append(dice.detach().item())
@@ -297,23 +263,59 @@ class Trainer:
                     checkpoint_name=checkpoint_name,
                     val_loss=validation_loss,
                     epoch=epoch,
-                ):
+                ) and isearly_stopping:
                     print(f"[INFO:] Early Stopping!!")
                     break
 
-from sklearn.model_selection import KFold, train_test_split
 
-train_df, test_df = train_test_split(dataset_df, train_size=0.8, random_state=42)
-input_shape = (256,256)
+if __name__ == "__main__":
+    import segmentation_models_pytorch as smp
+    from sklearn.model_selection import KFold, train_test_split
+    
+    device = 'cuda'if torch.cuda.is_available() else 'cpu'
+    model = smp.UnetPlusPlus(encoder_name="resnet34",
+                        encoder_weights=None,
+                        in_channels=1,
+                        classes=1,
+                        ).to(device)
+    # print(model)
+    busi_dataset_path = "Dataset_BUSI_with_GT"
 
-train_ds = BusiDataset(train_df, input_size=input_shape)
-test_ds = BusiDataset(test_df, input_size=input_shape)
-batch_size = 10
+    """ Benign """
+    benign_path = os.path.join(busi_dataset_path,"benign")
+    benign_images = sorted(glob.glob(benign_path +"/*).png"))
+    benign_masks = sorted(glob.glob(benign_path +"/*mask.png"))
+    key = [int(re.findall(r'[0-9]+',image_name)[0]) for image_name in benign_images]
+    benign_df = pd.DataFrame({'key':key,'images':benign_images,'masks':benign_masks})
 
-train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(dataset=test_ds, batch_size=batch_size, shuffle=False)
-trainer = Trainer(model,lr=3e-4,batch_size=batch_size)
-trainer.train(train_loader,test_loader,"unetplusplus_chkpt","unetplusplus")
-loss,dice_scores = trainer.test(test_loader)
-print(f"Mean Dice = {np.mean(dice_scores)}")
-image_iter = iter(test_loader)
+    """ Malignant"""
+    malignant_path = os.path.join(busi_dataset_path,"malignant")
+    malignant_images = sorted(glob.glob(malignant_path +"/*).png"))
+    malignant_masks = sorted(glob.glob(malignant_path +"/*mask.png"))
+    key = [int(re.findall(r'[0-9]+',image_name)[0]) + 437 for image_name in malignant_images]
+    malignant_df = pd.DataFrame({'key':key,'images':malignant_images,'masks':malignant_masks})
+
+    """ Normal """
+
+    normal_path = os.path.join(busi_dataset_path,"normal")
+    normal_images = sorted(glob.glob(malignant_path +"/*).png"))
+    normal_masks = sorted(glob.glob(malignant_path +"/*mask.png"))
+    key = [int(re.findall(r'[0-9]+',image_name)[0]) + 648 for image_name in normal_images]
+    normal_df = pd.DataFrame({'key':key,'images':normal_images,'masks':normal_masks})
+    dataset_df = pd.concat([benign_df,malignant_df,normal_df])
+    # print(dataset_df)
+
+    train_df, test_df = train_test_split(dataset_df, train_size=0.8, random_state=42)
+    input_shape = (256,256)
+
+    train_ds = BusiDataset(train_df, input_size=input_shape)
+    test_ds = BusiDataset(test_df, input_size=input_shape)
+    batch_size = 5
+
+    train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_ds, batch_size=batch_size, shuffle=False)
+    trainer = Trainer(model,lr=3e-4,batch_size=batch_size,epochs=50)
+    trainer.train(train_loader,test_loader,"unetplusplus_chkpt","unetplusplus")
+    loss,dice_scores = trainer.test(test_loader)
+    print(f"Mean Dice = {np.mean(dice_scores)}")
+    image_iter = iter(test_loader)
