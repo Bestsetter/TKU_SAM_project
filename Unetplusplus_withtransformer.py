@@ -213,6 +213,7 @@ class Trainer:
         checkpoint_dir: str,
         checkpoint_name: str,
         isearly_stopping: bool = 1 ,
+        isshowimg: bool = 0
     ):
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=0.001)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -226,7 +227,7 @@ class Trainer:
             epoch_loss = []
             epoch_dice = []
             progress_bar = tqdm(train_loader, total=len(train_loader))
-            for image, mask in progress_bar:
+            for batch_idx, (image, mask) in enumerate(progress_bar):
                 image = image.to(self.device)
                 mask = mask.to(self.device)
                 # Get predictioin mask
@@ -251,6 +252,19 @@ class Trainer:
                 progress_bar.set_postfix(
                     loss=np.mean(epoch_loss), dice=np.mean(epoch_dice)
                 )
+                if isshowimg and batch_idx == len(train_loader) - 1:
+                    img = pred_mask [0] # 取出一個圖片
+                    img = img.detach().cpu().numpy()
+                    img = img.transpose((1, 2, 0))  # 將形狀從 (channels, height, width) 轉換為 (height, width, channels)
+
+                    plt.imshow(img, cmap='gray') 
+                    plt.savefig(f'./trainPNG/output_{epoch}.png') 
+                    img = mask [0]
+                    img = img.detach().cpu().numpy()
+                    img = img.transpose((1, 2, 0))
+
+                    plt.imshow(img, cmap='gray') 
+                    plt.savefig(f'./trainPNG/input_{epoch}.png')
                 progress_bar.update()
 
             if epoch % 2 == 0:
@@ -314,7 +328,7 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(dataset=test_ds, batch_size=batch_size, shuffle=False)
-    trainer = Trainer(model,lr=3e-4,batch_size=batch_size,epochs=50)
+    trainer = Trainer(model,lr=3e-4,batch_size=batch_size,epochs=150)
     trainer.train(train_loader,test_loader,"unetplusplus_chkpt","unetplusplus")
     loss,dice_scores = trainer.test(test_loader)
     print(f"Mean Dice = {np.mean(dice_scores)}")
