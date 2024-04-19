@@ -69,9 +69,9 @@ class Trainer:
         self,
         model: nn.Module = None,
         lr: float = 3e-4,
-        batch_size: int = 30,
-        epochs: int = 150,
-        device: str = "cuda:0",
+        batch_size: int = 16,
+        epochs: int = 30,
+        # device: str = "GPU",
         # devigitce: str = "cpu",
     ) -> None:
         self.model = model
@@ -286,7 +286,8 @@ if __name__ == "__main__":
     import segmentation_models_pytorch as smp
     from sklearn.model_selection import KFold, train_test_split
     
-    device = 'cuda'if torch.cuda.is_available() else 'cpu'
+    # device = 'GPU' if torch.cuda.is_available() else 'cpu'
+    device = 'mps'
     model = smp.UnetPlusPlus(encoder_name="resnet34",
                         encoder_weights=None,
                         in_channels=1,
@@ -328,7 +329,7 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(dataset=test_ds, batch_size=batch_size, shuffle=False)
-    trainer = Trainer(model,lr=3e-4,batch_size=batch_size,epochs=150)
+    trainer = Trainer(model,lr=3e-4,batch_size=batch_size,epochs=3)
     trainer.train(train_loader,test_loader,"unetplusplus_chkpt","unetplusplus")
     loss,dice_scores = trainer.test(test_loader)
     print(f"Mean Dice = {np.mean(dice_scores)}")

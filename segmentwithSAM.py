@@ -125,7 +125,8 @@ from torch.nn.functional import threshold, normalize
 
 num_epochs = 1
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "GPU" if torch.cuda.is_available() else "cpu"
+device = 'mps'
 model.to(device)
 
 model.train()
@@ -137,6 +138,14 @@ best_loss = np.inf
 for epoch in range(num_epochs):
     epoch_losses = []
     for batch in tqdm(train_dataloader):
+        print()
+        print(batch)
+        print()
+        # batch["input_boxes"] = batch["input_boxes"].dtype(torch.float32)
+        batch["input_boxes"] = batch["input_boxes"].float()
+        print()
+        print(batch)
+        print()
         # forward pass
         outputs = model(pixel_values=batch["pixel_values"].to(device),
                       input_boxes=batch["input_boxes"].to(device),

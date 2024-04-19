@@ -9,6 +9,8 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from unetppSAM import gen_ans
+from unetppSAM_specific import gen_ans_specific
+from unetppSAM_directory import gen_ans_directory
 
 # DIRECTORY = ""
 # FILE = ""
@@ -23,7 +25,9 @@ class Application(tk.Frame):
         self.imagebox.place(x=250, y=100)
         # self.imagebox.pack(side='left')
         self.file_path = tk.StringVar()
+        self.file_path = "sample.png"
         self.directory_path = tk.StringVar()
+        self.directory_path = "sample"
         
     def create_GUI(self, configfile_path):
         configfile = open(configfile_path, "r", encoding="utf-8").read()
@@ -51,15 +55,20 @@ class Application(tk.Frame):
         self.checkbutton_base(left_frame, self.gen_is_show_ans , self.config["gen_is_show_ans_text"], background=self.config["background1"][0], foreground = self.config["background1"][2])             
         self.checkbutton_base(left_frame, self.gen_is_gen_compare , self.config["gen_is_gen_compare_text"], background=self.config["background1"][0], foreground = self.config["background1"][2])       
         self.checkbutton_base(left_frame, self.gen_is_show_compare , self.config["gen_is_show_compare_text"], background=self.config["background1"][0], foreground = self.config["background1"][2])     
-        self.button_base(left_frame, self.config["gen_button_text"], self.gen_ans_img, style="dark_black.TButton")
+        # self.button_base(left_frame, self.config["gen_button_text"], self.gen_ans_img, style="dark_black.TButton")
         # self.button_base(left_frame, "show_image", self.gen_image, style="dark_black.TButton")
-        self.button_base(left_frame, "show_image", self.show_image, style="dark_black.TButton")
+        # self.button_base(left_frame, "show_image", self.show_image, style="dark_black.TButton")
         self.quit_button(left_frame, "quit", quit, style="dark_black.TButton")
 
         self.button_base(left_frame, "select_file", self.select_file, style="dark_black.TButton")
+        # self.button_base(left_frame, "show_file_path", self.show_file_path, style="dark_black.TButton")
+        self.button_base(left_frame, "file_gen", self.gen_ans_img_specific, style="dark_black.TButton")
+        self.button_base(left_frame, "show_file_result", self.show_image_specific, style="dark_black.TButton")
+        
         self.button_base(left_frame, "select_directory", self.select_derictory, style="dark_black.TButton")
-        self.button_base(left_frame, "show_file_path", self.show_file_path, style="dark_black.TButton")
-        self.button_base(left_frame, "show_directory_path", self.show_directory_path, style="dark_black.TButton")
+        # self.button_base(left_frame, "show_directory_path", self.show_directory_path, style="dark_black.TButton")
+        self.button_base(left_frame, "directory_gen", self.gen_ans_img_directory, style="dark_black.TButton")
+        # self.button_base(left_frame, "show_directory_results", self.show_image_directory, style="dark_black.TButton")
 
 
     def checkbutton_base(self, window, var, text, background=None, foreground = None):
@@ -91,6 +100,43 @@ class Application(tk.Frame):
         image = ImageTk.PhotoImage(file=image_path)
         self.imagebox.config(image=image)
         self.imagebox.image = image
+
+
+    def gen_ans_img_specific(self):
+        # print("type os config: ", type(self.config["oentheSAM.py"]))
+        t = threading.Thread(target=gen_ans_specific, args=(self.config["oentheSAM.py"], int(self.gen_is_show_ans.get()), int(self.gen_is_gen_compare.get()), int(self.gen_is_show_compare.get()), self.file_path,))
+        t.daemon = self.config["set_daemon"]
+        t.start()
+
+    def show_image_specific(self):
+        image_name = self.file_path.split("/")
+        index = len(image_name) - 1
+        image_name = image_name[index]
+        image_path = "save_compare_all/" + image_name + "_compare_all.png"
+        # print(image_path)
+        # img = Image.open(image_path)
+        
+        image = ImageTk.PhotoImage(file=image_path)
+        self.imagebox.config(image=image)
+        self.imagebox.image = image
+
+    def gen_ans_img_directory(self):
+        # print("type os config: ", type(self.config["oentheSAM.py"]))
+        t = threading.Thread(target=gen_ans_directory, args=(self.config["oentheSAM.py"], int(self.gen_is_show_ans.get()), int(self.gen_is_gen_compare.get()), int(self.gen_is_show_compare.get()), self.directory_path,))
+        t.daemon = self.config["set_daemon"]
+        t.start()
+
+    # def show_image_directory(self):
+    #     image_name = self.file_path.split("/")
+    #     index = len(image_name) - 1
+    #     image_name = image_name[index]
+    #     image_path = "save_compare_all/" + image_name + "_compare_all.png"
+    #     # print(image_path)
+    #     # img = Image.open(image_path)
+        
+    #     image = ImageTk.PhotoImage(file=image_path)
+    #     self.imagebox.config(image=image)
+    #     self.imagebox.image = image
 
 
     def select_file(self):
