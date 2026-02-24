@@ -135,8 +135,8 @@ TKU_SAM_project/
 
 訓練資料集：BUSI（benign 437 張 + malignant 210 張），8:2 train/val split，均啟用 Early Stopping。
 
-| 模型 | 指標 | 結果 | Early Stop |
-|------|------|------|-----------|
-| **CNN** (ResNet) | Val Accuracy | 75.0% | ✅ |
-| **Unet++** (ResNet34) | Val Loss (Dice+BCE) | 0.3772 | ✅ |
-| **SAM** (fine-tuned mask decoder) | Val Loss (DiceCE) | **0.3190** | ✅（Epoch 14 最佳）|
+| 模型 | Val Dice | Val Accuracy | Early Stop |
+|------|----------|-------------|-----------|
+| **SAM** (fine-tuned mask decoder) | **0.741** | — | ✅（Epoch 14 最佳）|
+| **Unet++** (ResNet34 encoder) | **0.736** | — | ✅ |
+| **CNN** (自訂 ResNet，benign/malignant) | — | **75.0%** | ✅ |
