@@ -11,6 +11,11 @@ pinned: false
 
 使用 BUSI（Breast Ultrasound Images）資料集，結合 SAM 與 Unet++ 兩種模型進行乳房腫瘤切割，並以 Web 介面展示結果。
 
+[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Live%20Demo-blue)](https://huggingface.co/spaces/yuchengChang/tku-sam)
+
+> **線上 Demo**：[https://huggingface.co/spaces/yuchengChang/tku-sam](https://huggingface.co/spaces/yuchengChang/tku-sam)
+> 無需安裝，直接上傳超音波圖片即可使用。
+
 ---
 
 ## 架構
@@ -79,9 +84,12 @@ ngrok http 8000
 ## 使用方式
 
 1. 上傳 BUSI 超音波圖片（PNG / JPG）
-2. 在腫瘤位置拖曳滑鼠畫出黃色 bounding box
-3. 點擊 **Predict**
-4. 頁面顯示三格對比圖：原圖 ｜ SAM 切割（綠色）｜ Unet++ 切割（紅色）
+2. （選用）上傳對應的 Ground Truth Mask，可額外顯示 Recall / Precision / Dice 指標
+3. 在腫瘤位置拖曳滑鼠畫出黃色 bounding box
+4. 點擊 **Predict**
+5. 頁面顯示對比圖：
+   - 未上傳 mask：3 格（原圖 ｜ SAM 切割綠色 ｜ Unet++ 切割紅色）
+   - 已上傳 mask：4 格（原圖 ｜ GT 藍色 ｜ SAM + 指標 ｜ Unet++ + 指標）
 
 ---
 
