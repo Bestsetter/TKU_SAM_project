@@ -1,0 +1,14 @@
+torch
+torchvision
+transformers
+segmentation-models-pytorch
+datasets
+Pillow
+numpy
+matplotlib
+fastapi
+uvicorn[standard]
+python-multipart
+jinja2
+monai
+scikit-learn

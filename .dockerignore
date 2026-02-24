@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.git/
+archive/
+tests/
+Dataset_BUSI_with_GT/
+save_ans/
+save_compare/
+save_compare_all/
+trainPNG/
+yolov8_object_1/
+train_sam.py
+train_unet.py
+start_server.bat
+*.bat
+last.pth

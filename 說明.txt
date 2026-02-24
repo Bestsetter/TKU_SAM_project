@@ -1,4 +1,0 @@
-segmentwithSAM 是用來train的
-useSAM 是我測試用來看資料，只不過測試結果都是遠端的資料庫
-owntheSAM 就是用目錄下的資料夾來測試，但是訓練依然是用遠端資料庫
-然後有show圖片跟存檔的功能
