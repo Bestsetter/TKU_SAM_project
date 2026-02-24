@@ -20,9 +20,9 @@ from transformers import SamModel, SamProcessor
 
 DATASET_PATH = "Dataset_BUSI_with_GT"
 BATCH_SIZE   = 2
-NUM_EPOCHS   = 10
+NUM_EPOCHS   = 200
 LR           = 1e-5
-PATIENCE     = 5
+PATIENCE     = 15
 SAVE_PATH    = "best.pth"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

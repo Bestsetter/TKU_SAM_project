@@ -22,8 +22,9 @@ pinned: false
 
 | 模型 | 說明 |
 |------|------|
-| **SAM** (facebook/sam-vit-base) | 使用者畫出 bounding box 後進行切割，可選擇性載入 fine-tuned 權重 |
+| **SAM** (facebook/sam-vit-base) | 使用者畫出 bounding box 後進行切割，fine-tune mask decoder |
 | **Unet++** (ResNet34 encoder) | 以灰階超音波影像訓練的切割模型，輸出與 SAM 並列比較 |
+| **CNN** (自訂 ResNet) | 分類 benign / malignant，結果顯示於切割圖上方 |
 
 ---
 
@@ -51,19 +52,29 @@ pip install -r requirements.txt
 
 ## 訓練
 
+### CNN 分類器
+```bash
+python train_cnn.py
+```
+輸出：`cnn_chkpt/cnn_best.pth`
+
 ### Unet++
 ```bash
 python train_unet.py
 ```
-輸出：`unetplusplus_chkpt/unetplusplus.pth`（約 100MB，需 10-20 分鐘）
+輸出：`unetplusplus_chkpt/unetplusplus.pth`
 
-### SAM Fine-tune（選用）
-不 fine-tune 也可使用，但精度較低。
+### SAM Fine-tune
 ```bash
 pip install monai
 python train_sam.py
 ```
-輸出：`best.pth`（約 30-60 分鐘）
+輸出：`best.pth`
+
+三個模型均設有 Early Stopping，可依序執行：
+```bash
+python train_cnn.py && python train_unet.py && python train_sam.py
+```
 
 ---
 
@@ -87,9 +98,11 @@ ngrok http 8000
 2. （選用）上傳對應的 Ground Truth Mask，可額外顯示 Recall / Precision / Dice 指標
 3. 在腫瘤位置拖曳滑鼠畫出黃色 bounding box
 4. 點擊 **Predict**
-5. 頁面顯示對比圖：
-   - 未上傳 mask：3 格（原圖 ｜ SAM 切割綠色 ｜ Unet++ 切割紅色）
-   - 已上傳 mask：4 格（原圖 ｜ GT 藍色 ｜ SAM + 指標 ｜ Unet++ + 指標）
+5. 頁面顯示：
+   - **分類結果**：CNN 預測的 Benign / Malignant 標籤與機率
+   - **切割對比圖**：
+     - 未上傳 mask：3 格（原圖 ｜ SAM 切割綠色 ｜ Unet++ 切割紅色）
+     - 已上傳 mask：4 格（原圖 ｜ GT 藍色 ｜ SAM + 指標 ｜ Unet++ + 指標）
 
 ---
 
@@ -99,8 +112,10 @@ ngrok http 8000
 TKU_SAM_project/
 ├── app.py                  # FastAPI 後端
 ├── unetppSAM.py            # 推論核心（含 run_inference_web）
+├── cnn_classifier.py       # ResNet CNN 分類器架構
 ├── train_unet.py           # Unet++ 訓練腳本
 ├── train_sam.py            # SAM fine-tune 腳本
+├── train_cnn.py            # CNN 分類器訓練腳本
 ├── templates/
 │   └── index.html          # 前端單頁介面
 ├── json/
@@ -108,7 +123,9 @@ TKU_SAM_project/
 ├── Dataset_BUSI_with_GT/   # 資料集（不含在 git）
 ├── unetplusplus_chkpt/
 │   └── unetplusplus.pth    # Unet++ 權重（不含在 git）
-├── best.pth                # SAM fine-tuned 權重（不含在 git，選用）
+├── cnn_chkpt/
+│   └── cnn_best.pth        # CNN 分類器權重（不含在 git）
+├── best.pth                # SAM fine-tuned 權重（不含在 git）
 └── requirements.txt
 ```
 
@@ -116,7 +133,10 @@ TKU_SAM_project/
 
 ## 訓練結果
 
-| 模型 | Val Dice | Val Loss |
-|------|----------|----------|
-| Unet++ (30 epochs) | **0.707** | 0.369 |
-| SAM (base, no fine-tune) | — | — |
+訓練資料集：BUSI（benign 437 張 + malignant 210 張），8:2 train/val split，均啟用 Early Stopping。
+
+| 模型 | 指標 | 結果 | Early Stop |
+|------|------|------|-----------|
+| **CNN** (ResNet) | Val Accuracy | 75.0% | ✅ |
+| **Unet++** (ResNet34) | Val Loss (Dice+BCE) | 0.3772 | ✅ |
+| **SAM** (fine-tuned mask decoder) | Val Loss (DiceCE) | **0.3190** | ✅（Epoch 14 最佳）|

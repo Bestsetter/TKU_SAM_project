@@ -27,9 +27,9 @@ DATASET_PATH    = "Dataset_BUSI_with_GT"
 CHECKPOINT_DIR  = "unetplusplus_chkpt"
 CHECKPOINT_NAME = "unetplusplus"
 BATCH_SIZE      = 8
-EPOCHS          = 30
+EPOCHS          = 300
 LR              = 3e-4
-PATIENCE        = 10
+PATIENCE        = 25
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"[train_unet] device = {DEVICE}")

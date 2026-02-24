@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 import os
@@ -6,13 +7,14 @@ from typing import Optional
 import torch
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.requests import Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from PIL import Image
 from transformers import SamModel, SamProcessor
 import segmentation_models_pytorch as smp
 
 from unetppSAM import run_inference_web
+from cnn_classifier import ResNetClassifier
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "json", "config.json")
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -50,6 +52,24 @@ if os.path.exists(unet_weights_path):
 else:
     print(f"[startup] WARNING: {unet_weights_path} not found, Unet++ will produce random output")
 unet_model.eval()
+
+# Load CNN classifier
+cnn_model = ResNetClassifier(in_channel=1, num_classes=2).to(DEVICE)
+cnn_weights_path = os.path.join(os.path.dirname(__file__), "cnn_chkpt", "cnn_best.pth")
+if not os.path.exists(cnn_weights_path):
+    hf_repo = os.environ.get("HF_UNET_MODEL_REPO", "")
+    if hf_repo:
+        from huggingface_hub import hf_hub_download
+        print(f"[startup] Downloading CNN weights from HF Hub: {hf_repo} ...")
+        os.makedirs(os.path.dirname(cnn_weights_path), exist_ok=True)
+        cnn_weights_path = hf_hub_download(repo_id=hf_repo, filename="cnn_best.pth",
+                                            local_dir=os.path.dirname(cnn_weights_path))
+if os.path.exists(cnn_weights_path):
+    cnn_model.load_state_dict(torch.load(cnn_weights_path, map_location=DEVICE, weights_only=True))
+    print(f"[startup] Loaded CNN weights from {cnn_weights_path}")
+else:
+    print(f"[startup] WARNING: {cnn_weights_path} not found, CNN will produce random output")
+cnn_model.eval()
 print("[startup] Models ready.")
 
 app = FastAPI()
@@ -70,8 +90,13 @@ async def predict(
     bbox_list = [int(v) for v in json.loads(bbox)]
     pil_image = Image.open(io.BytesIO(await image.read()))
     pil_mask  = Image.open(io.BytesIO(await mask.read())) if mask else None
-    result_png = run_inference_web(
+    result_png, label, prob_benign, prob_malignant = run_inference_web(
         pil_image, bbox_list, sam_model, sam_processor, unet_model, DEVICE,
-        gt_mask=pil_mask,
+        gt_mask=pil_mask, cnn_model=cnn_model,
     )
-    return Response(content=result_png, media_type="image/png")
+    return JSONResponse({
+        "image": base64.b64encode(result_png).decode(),
+        "label": label,
+        "prob_benign":    round(prob_benign,    4),
+        "prob_malignant": round(prob_malignant, 4),
+    })

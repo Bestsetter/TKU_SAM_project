@@ -66,7 +66,8 @@ def _seg_metrics(pred, gt):
     return recall, precision, dice
 
 
-def run_inference_web(image, bbox, sam_model, sam_processor, unet_model, device, gt_mask=None):
+def run_inference_web(image, bbox, sam_model, sam_processor, unet_model, device,
+                      gt_mask=None, cnn_model=None):
     """
     Web inference entry point. No disk I/O.
 
@@ -78,9 +79,10 @@ def run_inference_web(image, bbox, sam_model, sam_processor, unet_model, device,
         unet_model   : pre-loaded UnetPlusPlus
         device       : "cuda" or "cpu"
         gt_mask      : optional PIL Image — ground truth mask for metric computation
+        cnn_model    : optional ResNetClassifier — for benign/malignant classification
 
     Returns:
-        PNG bytes.
+        (png_bytes, label, prob_benign, prob_malignant)
         Without gt_mask: 1x3 figure [Original | SAM | Unet++]
         With    gt_mask: 1x4 figure [Original | GT  | SAM (metrics) | Unet++ (metrics)]
     """
@@ -136,7 +138,25 @@ def run_inference_web(image, bbox, sam_model, sam_processor, unet_model, device,
     plt.savefig(buf, format="png", bbox_inches="tight")
     plt.close("all")
     buf.seek(0)
-    return buf.read()
+    png_bytes = buf.read()
+
+    # CNN classification
+    label, prob_benign, prob_malignant = "N/A", 0.5, 0.5
+    if cnn_model is not None:
+        preprocess_gray = transforms.Compose([
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+        ])
+        img_tensor = preprocess_gray(image.convert("L")).unsqueeze(0).to(device)
+        cnn_model.eval()
+        with torch.no_grad():
+            logits = cnn_model(img_tensor)
+            probs  = torch.softmax(logits, dim=1)[0].cpu()
+        prob_benign    = float(probs[0])
+        prob_malignant = float(probs[1])
+        label = "Benign" if prob_benign > prob_malignant else "Malignant"
+
+    return png_bytes, label, prob_benign, prob_malignant
 
 
 def _run_inference(config, image_path, mask_path, is_show_ans, is_gen_compare, is_show_compare):

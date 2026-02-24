@@ -70,6 +70,20 @@
     #result-section h2 { color: #eee; margin-bottom: 12px; }
     #result-img { max-width: 100%; border-radius: 6px; border: 1px solid #444; }
 
+    #classification-badge {
+      display: inline-block;
+      margin-bottom: 14px;
+      padding: 8px 24px;
+      border-radius: 999px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+    }
+    .badge-benign    { background: #1a4d2e; color: #6fe88a; border: 1px solid #6fe88a; }
+    .badge-malignant { background: #4d1a1a; color: #f77; border: 1px solid #f77; }
+    .badge-na        { background: #333; color: #aaa; border: 1px solid #555; }
+    #classification-detail { font-size: 0.82rem; color: #888; margin-bottom: 10px; }
+
     #status { font-size: 0.85rem; color: #fa8; min-height: 1.2em; }
   </style>
 </head>
@@ -109,6 +123,8 @@
   <!-- Result -->
   <div id="result-section">
     <h2>分割結果</h2>
+    <div id="classification-badge" class="badge-na">—</div>
+    <div id="classification-detail"></div>
     <img id="result-img" src="" alt="result" />
   </div>
 
@@ -128,6 +144,8 @@
     const status     = document.getElementById('status');
     const resultSec  = document.getElementById('result-section');
     const resultImg  = document.getElementById('result-img');
+    const clsBadge   = document.getElementById('classification-badge');
+    const clsDetail  = document.getElementById('classification-detail');
 
     let uploadedFile = null;
     let maskFile     = null;
@@ -270,8 +288,25 @@
           predictBtn.disabled = false;
           return;
         }
-        const blob = await resp.blob();
-        resultImg.src = URL.createObjectURL(blob);
+        const data = await resp.json();
+
+        // Show segmentation image
+        resultImg.src = `data:image/png;base64,${data.image}`;
+
+        // Show classification badge
+        if (data.label === 'Benign') {
+          clsBadge.textContent = '良性 Benign';
+          clsBadge.className = 'badge-benign';
+        } else if (data.label === 'Malignant') {
+          clsBadge.textContent = '惡性 Malignant';
+          clsBadge.className = 'badge-malignant';
+        } else {
+          clsBadge.textContent = '—';
+          clsBadge.className = 'badge-na';
+        }
+        clsDetail.textContent =
+          `Benign: ${(data.prob_benign * 100).toFixed(1)}%　Malignant: ${(data.prob_malignant * 100).toFixed(1)}%`;
+
         resultSec.style.display = 'block';
         status.textContent = '推論完成！';
       } catch (err) {
