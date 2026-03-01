@@ -145,7 +145,6 @@ TKU_SAM_project/
 | Standard U-Net †| 全監督 | 0.730 | 0.764 | 0.743 | 0.718 |
 | Attention U-Net †| 全監督 | 0.772 | 0.790 | 0.756 | 0.789 |
 | **SAM zero-shot** (bbox prompt) | **不需訓練** | **0.812** | **0.693** | **0.949** | 0.724 |
-| SAM fine-tuned (僅調 mask decoder) | 部分微調 | 0.741 | — | — | — |
 | Unet++ (ResNet34) | 全監督 | 0.736 | — | — | — |
 
 † 數據來源：[kevinzeroCode/Breast_Ultrasound_Segmentation](https://github.com/kevinzeroCode/Breast_Ultrasound_Segmentation)
