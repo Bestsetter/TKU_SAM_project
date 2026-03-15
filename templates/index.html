@@ -282,6 +282,11 @@
 
       try {
         const resp = await fetch('/predict', { method: 'POST', body: formData });
+        if (resp.status === 503) {
+          status.textContent = '模型尚在載入中，請稍候 10–30 秒後再試…';
+          predictBtn.disabled = false;
+          return;
+        }
         if (!resp.ok) {
           const txt = await resp.text();
           status.textContent = `錯誤：${resp.status} — ${txt}`;
