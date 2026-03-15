@@ -15,6 +15,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Pre-download SAM model weights into the image (avoids runtime download timeout)
+RUN python -c "from transformers import SamModel, SamProcessor; SamModel.from_pretrained('facebook/sam-vit-base'); SamProcessor.from_pretrained('facebook/sam-vit-base')"
+
 # Copy project files
 COPY . .
 
